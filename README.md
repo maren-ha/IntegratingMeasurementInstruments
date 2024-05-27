@@ -2,7 +2,7 @@
 
 This repository contains the code for the manuscript 
 
-**Hackenberg M., Pfaffenlehner M., Behrens M., Pechmann A., Kirschner J., and Binder H. Investigating a domain adaptation approach for integrating different measurement instruments in a longitudinal clinical registry, [arXiv preprint: 2312.00616](https://arxiv.org/abs/2312.00616), 2024.**
+> Hackenberg, M., Pfaffenlehner, M., Behrens, M., Pechmann, A., Kirschner, J., and Binder, H. (2023) Investigating a domain adaptation approach for integrating different measurement instruments in a longitudinal clinical registry. :globe_with_meridians: [arXiv:2312.00616](https://arxiv.org/abs/2312.00616).
 
 ## Introduction
 
@@ -12,8 +12,8 @@ In a longitudinal clinical registry, different measurement instruments might hav
 
 Using our proposed approach as an example, we evaluate the potential of domain adaptation in a longitudinal cohort setting with a rather small number of time points, motivated by an application with different motor function measurement instruments in a registry of spinal muscular atrophy (SMA) patients. We model trajectories in the latent representation by ordinary differential equations (ODEs), where person-specific ODE parameters are inferred from baseline characteristics. This is based on our previous work on ODEs for latent dynamic modeling of longitudinal data: 
 
-- Hackenberg, M., Pechmann, A., Kreutz, C., Kirschner, J., and Binder, H. (2023) A statistical approach to latent dynamic modeling with differential equations. 2023. :globe_with_meridians: [arXiv:2311.16286](https://arxiv.org/abs/2311.16286), :computer: [LatentDynamics.jl](https://github.com/maren-ha/LatentDynamics.jl/tree/main)
-- Hackenberg, M., Harms, P., Pfaffenlehner, M., Pechmann, A., Kirschner, J., Schmidt, T., and Binder, H. (2022). Deep dynamic modeling with just two time points: Can we still allow for individual trajectories?. Biometrical Journal, 64, 1426–1445. :globe_with_meridians: [doi:10.1002/bimj](https://doi.org/10.1002/bimj.202000366) :computer: [DeepDynamicModelingWithJust2TimePoints](https://github.com/maren-ha/DeepDynamicModelingWithJust2TimePoints)
+- Hackenberg, M., Pechmann, A., Kreutz, C., Kirschner, J., and Binder, H. (2023) A statistical approach to latent dynamic modeling with differential equations. 2023. :globe_with_meridians: [arXiv:2311.16286](https://arxiv.org/abs/2311.16286); :computer: [LatentDynamics.jl](https://github.com/maren-ha/LatentDynamics.jl/tree/main).
+- Hackenberg, M., Harms, P., Pfaffenlehner, M., Pechmann, A., Kirschner, J., Schmidt, T., and Binder, H. (2022). Deep dynamic modeling with just two time points: Can we still allow for individual trajectories?. Biometrical Journal, 64, 1426–1445. :globe_with_meridians: [doi:10.1002/bimj](https://doi.org/10.1002/bimj.202000366); :computer: [DeepDynamicModelingWithJust2TimePoints](https://github.com/maren-ha/DeepDynamicModelingWithJust2TimePoints).
 
 To systematically investigate the effect of differences between measurement instruments, we consider several scenarios based on modified SMA data with artificial discrepancies, including scenarios where a mapping should be feasible in principle and scenarios where no perfect mapping is available. We subsequently evaluate the approach on two measurement instruments from the SMA registry. 
 
