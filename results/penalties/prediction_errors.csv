@@ -1,0 +1,9 @@
+PenaltyType,Dimension,ODE,LinearModel
+No penalty,dim1,559.111,666.978
+No penalty,dim2,1100.523,1334.47
+Only ODE penalty,dim1,521.61,671.049
+Only ODE penalty,dim2,742.452,797.184
+Only adversarial penalty,dim1,475.959,573.724
+Only adversarial penalty,dim2,727.224,842.019
+ODE and adversarial penalty,dim1,389.138,546.824
+ODE and adversarial penalty,dim2,587.723,661.767
