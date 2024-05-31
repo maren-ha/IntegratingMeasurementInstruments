@@ -23,7 +23,6 @@ using Parameters
 using Plots 
 using ProgressMeter
 using StatsBase
-using VegaLite
 
 gr()
 
