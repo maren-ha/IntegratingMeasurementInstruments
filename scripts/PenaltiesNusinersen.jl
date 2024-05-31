@@ -22,7 +22,6 @@ using Parameters
 using Plots 
 using ProgressMeter
 using StatsBase
-using VegaLite
 
 gr()
 
@@ -257,18 +256,26 @@ save_plots_dir = save_eval_dir
 
 #----------------------------------------
 # no penalties
-plot_no_penalty = plot(plot_selected_ids_final(no_penalty_models["m1"], no_penalty_models["m2"], 
-    mixeddata, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_no_penalty = plot(
+    plot_selected_ids_final(
+        no_penalty_models["m1"], no_penalty_models["m2"], 
+        mixeddata, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
+        marker_sizes = [7, 5]
+    ), 
     plot_title="No ODE or adversarial penalty"
 )
 savefig(plot_no_penalty, joinpath(save_plots_dir, "no_penalty.pdf"))
 
 #----------------------------------------
 # only ODE penalty
-plot_only_ODE_penalty = plot(plot_selected_ids_final(only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
-    mixeddata, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_only_ODE_penalty = plot(
+    plot_selected_ids_final(
+        only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
+        mixeddata, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
+        marker_sizes = [7, 5]
+    ), 
     plot_title="Only ODE penalty"
 )
 savefig(plot_only_ODE_penalty, joinpath(save_plots_dir, "only_ODE_penalty.pdf"))
@@ -276,9 +283,13 @@ savefig(plot_only_ODE_penalty, joinpath(save_plots_dir, "only_ODE_penalty.pdf"))
 #----------------------------------------
 # only adversarial penalty
 
-plot_only_adversarial_penalty = plot(plot_selected_ids_final(only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
-    mixeddata, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_only_adversarial_penalty = plot(
+    plot_selected_ids_final(
+        only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
+        mixeddata, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
+        marker_sizes = [7, 5]
+    ), 
     plot_title="Only adversarial penalty"
 )
 savefig(plot_only_adversarial_penalty, joinpath(save_plots_dir, "only_adversarial_penalty.pdf"))
@@ -286,9 +297,13 @@ savefig(plot_only_adversarial_penalty, joinpath(save_plots_dir, "only_adversaria
 #----------------------------------------
 # both ODE and adversarial penalty
 
-plot_ODE_and_adversarial_penalty = plot(plot_selected_ids_final(ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
-    mixeddata, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_ODE_and_adversarial_penalty = plot(
+    plot_selected_ids_final(
+        ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
+        mixeddata, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
+        marker_sizes = [7, 5]
+    ), 
     plot_title="ODE and adversarial penalty"
 )
 savefig(plot_ODE_and_adversarial_penalty, joinpath(save_plots_dir, "ODE_and_adversarial_penalty.pdf"))
