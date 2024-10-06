@@ -61,7 +61,7 @@ baseline_vars = names(baseline_df)[findall(x -> !(x ∈ ["cohort", "baseline_dat
 
 test1="hfmse"
 test2="rulm"
-mixeddata = get_data_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1=test1, test2=test2, remove_lessthan1=true);
+mixeddata = get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1=test1, test2=test2, remove_lessthan1=true);
 
 #------------------------------
 # train jointly from scratch  
@@ -76,8 +76,8 @@ modelargs1 = ModelArgs(p=size(mixeddata.xs1[1],1),
                     dynamics=dynamics,
                     bottleneck=false,
                     seed=1234,
-                    scale_sigmoid=2, 
-                    add_diagonal=true 
+                    scale_sigmoid=2, # structure of the baseline network: controls the range of the ODE parameters
+                    add_diagonal=true # structure of the baseline network: whether or not a diagonal transformation is added
 )
 modelargs2 = ModelArgs(p=size(mixeddata.xs2[1],1), 
                     q=length(mixeddata.xs_baseline[1]), 
@@ -100,8 +100,6 @@ args_joint=LossArgs(
     λ_variancepenalty=5.0,
     variancepenaltytype = :sum_ratio,
     variancepenaltyoffset = 1.0f0, 
-    skipt0=true,
-    weighting=true, 
 )
 # prepare training
 trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)
@@ -121,9 +119,7 @@ args_joint=LossArgs(
     λ_adversarialpenalty=0.0f0,#1.0f0,
     λ_variancepenalty=5.0,
     variancepenaltytype = :sum_ratio,
-    variancepenaltyoffset = 1.0f0, 
-    skipt0=true,
-    weighting=true, 
+    variancepenaltyoffset = 1.0f0
 )
 # prepare training
 trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)# lr=0.00008
@@ -143,9 +139,7 @@ args_joint=LossArgs(
     λ_adversarialpenalty=5.0f0,#1.0f0,
     λ_variancepenalty=5.0,
     variancepenaltytype = :sum_ratio,
-    variancepenaltyoffset = 1.0f0, 
-    skipt0=true,
-    weighting=true, 
+    variancepenaltyoffset = 1.0f0
 )
 # prepare training
 trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)# lr=0.00008
@@ -165,9 +159,7 @@ args_joint=LossArgs(
     λ_adversarialpenalty=5.0f0,#1.0f0,
     λ_variancepenalty=5.0,
     variancepenaltytype = :sum_ratio,
-    variancepenaltyoffset = 1.0f0, 
-    skipt0=true,
-    weighting=true, 
+    variancepenaltyoffset = 1.0f0
 )
 # prepare training
 trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)# lr=0.00008
@@ -257,7 +249,7 @@ save_plots_dir = save_eval_dir
 #----------------------------------------
 # no penalties
 plot_no_penalty = plot(
-    plot_selected_ids_final(
+    plot_selected_ids(
         no_penalty_models["m1"], no_penalty_models["m2"], 
         mixeddata, args_joint, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
@@ -270,7 +262,7 @@ savefig(plot_no_penalty, joinpath(save_plots_dir, "no_penalty.pdf"))
 #----------------------------------------
 # only ODE penalty
 plot_only_ODE_penalty = plot(
-    plot_selected_ids_final(
+    plot_selected_ids(
         only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
         mixeddata, args_joint, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
@@ -284,7 +276,7 @@ savefig(plot_only_ODE_penalty, joinpath(save_plots_dir, "only_ODE_penalty.pdf"))
 # only adversarial penalty
 
 plot_only_adversarial_penalty = plot(
-    plot_selected_ids_final(
+    plot_selected_ids(
         only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
         mixeddata, args_joint, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
@@ -298,7 +290,7 @@ savefig(plot_only_adversarial_penalty, joinpath(save_plots_dir, "only_adversaria
 # both ODE and adversarial penalty
 
 plot_ODE_and_adversarial_penalty = plot(
-    plot_selected_ids_final(
+    plot_selected_ids(
         ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
         mixeddata, args_joint, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
