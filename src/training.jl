@@ -1,3 +1,23 @@
+"""
+    TrainingArgs(; warmup::Bool=true, epochs_warmup::Int=0, epochs::Int=20, 
+                  lr_warmup::AbstractFloat=0.001, lr::AbstractFloat=0.0005)
+
+A structure that holds training arguments for model training. 
+It uses keyword arguments to configure various training parameters 
+such as an optional warmup phase, learning rates, and the number of epochs.
+
+# Keyword Arguments
+- `warmup::Bool`: Indicates whether a warmup phase should be used before the main training. Defaults to `true`.
+- `epochs_warmup::Int`: The number of epochs to use for warmup, if warmup is enabled. Defaults to `0`.
+- `epochs::Int`: The total number of training epochs after the warmup phase. Defaults to `20`.
+- `lr_warmup::AbstractFloat`: The learning rate during the warmup phase. Defaults to `0.001`.
+- `lr::AbstractFloat`: The learning rate during the main training phase. Defaults to `0.0005`.
+
+# Example
+```julia
+args = TrainingArgs(warmup=true, epochs_warmup=5, epochs=50, lr_warmup=0.002, lr=0.001)
+```
+"""
 @with_kw mutable struct TrainingArgs
     warmup::Bool=true
     epochs_warmup::Int=0
@@ -7,34 +27,39 @@
 end
 
 """
-    train_model!(m::odevae, 
-        xs, xs_baseline, tvals, 
-        lr, epochs, args::LossArgs; 
-        selected_ids=nothing, 
-        verbose::Bool=true, 
-        plotting::Bool=true
-        )
+    train_mixed_model!(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, 
+                       lossargs::LossArgs, trainingargs::TrainingArgs; 
+                       verbose::Bool=true, plotting::Bool=false)
 
-Train the ODE-VAE model `m` on a dataset of time-dependent variables `xs`, 
-    baseline variables `xs_baseline` and time points `tvals`. The structure of these 
-    is assumed to be as in the `SMATestData` and `simdata` structs. 
+Joint training of two `odevae` models, such that in the two latent spaces are aligned, 
+by solving a joint ODE and using the solution of the joint ODE as deoder input for each model. 
+Optionally, controlled by the `lossargs`, penalty terms are used to further improve alignment. 
+
+The function includes options for warmup, verbose logging, and periodic plotting during training.
+
+# Details
+1. **Warmup Phase (Optional)**:
+   If warmup is enabled in `trainingargs`, a warmup phase runs for a specified number of epochs (`epochs_warmup`) using only the parameters of `m2` and a warmup learning rate (`lr_warmup`). The model parameters are updated using the ADAM optimizer.
+
+2. **Main Training Phase**:
+   The primary training phase runs for the number of epochs specified in `trainingargs.epochs`. Both models, `m1` and `m2`, are trained jointly with the main learning rate (`lr`). The optimizer used for both models is ADAM.
+
+3. **Plotting**:
+   If `plotting=true`, the function generates a panel of scatter plots during training for 12 randomly selected patients. This provides visual feedback of how the models are fitting the data.
+
+4. **Random Seed**:
+   The function uses random seeding for the warmup and training phases to ensure reproducibility.
 
 # Arguments
-- `m`: the ODE-VAE model to train
-- `xs`: a vector of matrices of time-dependent variables for each patient
-- `xs_baseline`: a vector of vectors of baseline variables for each patient
-- `tvals`: a vector of vectors of time points for each patient
-- `lr`: the learning rate of the ADAM optimizer
-- `epochs`: the number of epochs to train for
-- `args`: arguments controlling the loss function behaviour, see `?LossArgs` for details
-- `selected_ids`: the IDs of the patients to plot during training to monitor progress,
-    if `nothing` (default) then 12 random IDs are selected
-- `verbose`: whether to print the epoch and loss value during training
-- `plotting`: whether to visualize the learnt latent trajectories of selected patients 
-    (those with the `selected_ids`)
+- `m1::odevae`: The first ODE-VAE model.
+- `m2::odevae`: The second ODE-VAE model.
+- `mixeddata::SMAMixedTestData`: The dataset containing time-series and baseline data for training the models.
+- `lossargs::LossArgs`: Loss function parameters to be used during training.
+- `trainingargs::TrainingArgs`: Training arguments (e.g., learning rates, epochs) encapsulated in a `TrainingArgs` struct.
 
-# Returns 
-- `m`: the trained ODE-VAE model
+# Keyword Arguments
+- `verbose::Bool`: If `true`, the function will print the mean loss at each epoch. Defaults to `true`.
+- `plotting::Bool`: If `true`, scatter plots for a random selection of patients will be generated and displayed during training. Defaults to `false`.
 """
 function train_mixed_model!(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, 
                             lossargs::LossArgs, trainingargs::TrainingArgs; 
@@ -96,7 +121,7 @@ function train_mixed_model!(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData,
             end
         state = copy(Random.default_rng());
         verbose && evalcb()
-        plotting && display(plot_selected_ids(m1, m2, mixeddata, lossargs, plot_ids_joint))
+        plotting && display(plot_selected_ids(m1, m2, mixeddata, plot_ids_joint))
     end
 end
 
