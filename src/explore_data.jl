@@ -1,4 +1,39 @@
-function create_patients_and_visits_summary(mixeddata)
+"""
+    create_patients_and_visits_summary(mixeddata)
+
+Create a summary of the patients and visits in the dataset. Specifically, the following information is provided:
+
+- Number of patients with HFMSE measurements
+- Number of patients with RULM measurements
+- Number of patients with both tests at each visit
+- Number of patients with only HFMSE at each visit
+- Number of patients with only RULM at each visit
+- Number of patients with visits with one or both tests
+- Total number of patients
+- Total number of visits
+- Minimum number of visits per patient
+- Maximum number of visits per patient
+- Median number of visits per patient
+- Total number of RULM and HFMSE measurements
+- Total number of HFMSE measurements
+- Total number of RULM measurements
+- Number of visits with both tests
+- Number of visits with only HFMSE
+- Number of visits with only RULM
+- Minimum number of HFMSE visits per patient
+- Maximum number of HFMSE visits per patient
+- Median number of HFMSE visits per patient
+- Minimum number of RULM visits per patient
+- Maximum number of RULM visits per patient
+- Median number of RULM visits per patient
+
+# Arguments
+- `mixeddata::SMAMixedTestData`: A `SMAMixedTestData` object containing the data for the two tests.
+
+# Returns
+- `summary_df::DataFrame`: A DataFrame containing the summary information.
+"""
+function create_patients_and_visits_summary(mixeddata::SMAMixedTestData)
 
     # info about visits per patient
     n_overall = length(mixeddata.ids)
@@ -115,6 +150,19 @@ function create_patients_and_visits_summary(mixeddata)
     return summary_df
 end
 
+"""
+    plot_visit_patterns(plot_df, ids; seed=42)
+
+Plot the visit patterns of the patients in the dataset. Specifically, the HFMSE and RULM measurements are plotted for a random subset of patients.
+
+# Arguments
+- `plot_df::DataFrame`: A DataFrame containing the data to be plotted.
+- `ids::Vector{Int}`: A vector containing the patient ids.
+- `seed::Int`: The seed for the random number generator.
+
+# Returns
+- `viz_test::Plots.Plot`: A plot showing the visit patterns of the patients.
+"""
 function plot_visit_patterns(plot_df, ids; seed=42)
     viz_test = plot(
         xlims = (-2, 60), xlabel="time in months",
