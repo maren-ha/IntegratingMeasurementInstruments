@@ -1,3 +1,15 @@
+"""
+    mutable struct SMATestData
+
+Struct to serve as a container for the SMArtCARE data of one measurement instrument, 
+    consisting of the following fields: 
+- `test`: name of the motor function test for which the data is collected
+- `xs`: vector of matrices (n_items x n_timepoints) of the item scores across time of
+            the chosen test for each patient
+- `xs_baseline`: vector of vectors of baseline variable measurements for each patient
+- `tvals`: vector of vectors of follow-up time points for each patient
+- `ids`: vector of patient IDs
+"""
 mutable struct SMATestData
     test::String
     xs::Vector{Matrix{Float32}}
@@ -6,6 +18,22 @@ mutable struct SMATestData
     ids::Vector
 end
 
+"""
+    mutable struct SMAMixedTestData
+
+Struct to serve as a container for the SMArtCARE data of two measurement instruments (tests), 
+    consisting of the following fields: 
+- `test1`: name of the first motor function test for which the data is collected
+- `test2`: name of the second motor function test for which the data is collected
+- `xs1`: vector of matrices (n_items x n_timepoints) of the item scores across time of
+            the chosen `test1` for each patient
+- `xs2`: vector of matrices (n_items x n_timepoints) of the item scores across time of
+            the chosen `test2` for each patient
+- `xs_baseline`: vector of vectors of baseline variable measurements for each patient
+- `tvals1`: vector of vectors of follow-up time points for each patient for `test1`
+- `tvals2`: vector of vectors of follow-up time points for each patient for `test2`
+- `ids`: vector of patient IDs
+"""
 mutable struct SMAMixedTestData
     test1::String
     test2::String
@@ -14,11 +42,21 @@ mutable struct SMAMixedTestData
     xs_baseline::Vector{Vector{Float32}}
     tvals1::Vector{Vector{Float32}}
     tvals2::Vector{Vector{Float32}}
-    ids1::Vector
-    ids2::Vector
     ids::Vector
 end
 
+"""
+    get_test_variables(test, colnames)
+
+Function to extract the variables of the items of a specific test from the column names of the time-dependent dataframe.
+
+# Arguments
+- `test`: name of the motor function test to match against. Expected values include substrings like "chop", "rulm", "hfmse", or "six".
+- `colnames`: A vector of column names of the time-dependent dataframe to filter based on the `test` name.
+
+# Returns
+- `Vector{String}`: A vector of column names from `colnames` that match the criteria associated with the specified `test`.
+"""
 function get_test_variables(test, colnames)
     if occursin("chop", test)
         test_vars = filter(x-> occursin("chop", x), colnames)
@@ -37,10 +75,33 @@ end
 
 uniqueidx(v) = unique(i -> v[i], eachindex(v))
 
+"""
+    get_test_name(test::String)
+
+Function to return the name of the test variable (indicating whether the test was conducted at a given time point)
+ in the dataframe based on the test name.
+
+# Arguments
+- `test`: name of the motor function test, e.g. "rulm" or "hfmse".
+
+# Returns
+- `String`: The name of the test variable in the dataframe.
+"""
 function get_test_name(test::String)
     return "test_$test"
 end
 
+"""
+    get_score_variable_name(testname::String)
+
+Function to return the name of the sum score variable for the given test name.
+
+# Arguments
+- `testname::String`: name of the motor function test, e.g. "rulm" or "hfmse".
+
+# Returns
+- `String`: The name of the sum score variable in the dataframe.
+"""
 function get_score_variable_name(testname::String)
     if testname == "rulm"
         score_var_name = "rulm_score"
@@ -51,6 +112,20 @@ function get_score_variable_name(testname::String)
     return score_var_name
 end
 
+"""
+    get_test_rows(curdf, test1, test2)
+
+Function to return the indices of the rows in the dataframe that correspond to observations of the given tests.
+
+# Arguments
+- `curdf`: (sub-dataframe of the) time-dependent data containing the observations of the tests.
+- `test1`: name of the first motor function test.
+- `test2`: name of the second motor function test.
+
+# Returns
+- `curidx1`: Indices of the rows corresponding to observations of `test1`.
+- `curidx2`: Indices of the rows corresponding to observations of `test2`.
+"""
 function get_test_rows(curdf, test1, test2)
     testname1 = get_test_name(test1)
     testname2 = get_test_name(test2)
@@ -71,6 +146,19 @@ function get_test_rows(curdf, test1, test2)
     return curidx1, curidx2
 end
 
+"""
+    shift_tvals!(curtvals1, curtvals2)
+
+Function to shift the time values of the two tests so that the first time point starts at 0.
+
+# Arguments
+- `curtvals1`: Vector of time values for the first test.
+- `curtvals2`: Vector of time values for the second test.
+
+# Returns
+- `curtvals1`: Shifted vector of time values for the first test.
+- `curtvals2`: Shifted vector of time values for the second test.
+"""
 function shift_tvals!(curtvals1, curtvals2)
     if !(0 in curtvals1) & !(0 in curtvals2) 
         if isempty(curtvals1)
@@ -87,7 +175,35 @@ function shift_tvals!(curtvals1, curtvals2)
 end
 
 #test, new_baseline_df, new_timedepend_df, extended_output=true
-function get_data_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1::String="hfmse", test2::String="rulm", remove_lessthan1::Bool=false)
+"""
+    get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1::String="hfmse", test2::String="rulm", remove_lessthan1::Bool=false)
+
+Function to preprocess the SMArtCARE data for two specific tests. The function returns an `SMAMixedTestData` struct with the extracted information
+    on time-dependent and baseline variables, follow-up time points and IDs of all patients for whom the chosen tests were conducted.
+
+From the provided input dataframes, the function first filters the time-dependent dataframe for patients that have the selected tests conducted.
+The dataframe is then subset to the variables of the items of the specific tests.
+The baseline dataframe is subset to the same patients.
+For each patient, outlier time points are filtered out.
+An outlier is classified as a time point where the difference to the previous time point is larger than 2 times the
+interquartile range of all difference between subsequent time points for that patient.
+Additionally, the variance of the sum score of the test is calculated, to allow for potential further subsequent filtering.
+
+# Arguments
+- `timedepend_df`: DataFrame containing the time-dependent variables for all patients
+- `baseline_df`: DataFrame containing the baseline variables for all patients
+- `other_vars`: Vector of other important time-dependent variables
+- `baseline_vars`: Vector of baseline variables
+
+# Keyword arguments
+- `test1`: name of the first motor function test for which the data is collected
+- `test2`: name of the second motor function test for which the data is collected
+- `remove_lessthan1`: if `true`, patients with only one observation per test are removed from the data
+
+# Returns
+- `SMAMixedTestData`: A struct containing the preprocessed data for the two specified tests
+"""
+function get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1::String="hfmse", test2::String="rulm", remove_lessthan1::Bool=false)
 
     testname1, testname2 = get_test_name(test1), get_test_name(test2)
     notest1inds = findall(x->ismissing(x),timedepend_df[:,testname1])
@@ -116,8 +232,6 @@ function get_data_tests(timedepend_df, baseline_df, other_vars, baseline_vars; t
     tvals1 = []
     tvals2 = []
     xs_baseline = []
-    ids1 = []
-    ids2 = []
     ids = []
 
     keep_timepoint_masks_1 = []
@@ -177,7 +291,6 @@ function get_data_tests(timedepend_df, baseline_df, other_vars, baseline_vars; t
 
         #Shift tvals so that the first value starts with 0
         curtvals1, curtvals2 = shift_tvals!(curtvals1, curtvals2)
-        !isempty(curtvals1) ? push!(ids1,patient_id) : push!(ids2, patient_id)
 
         # filter time points
         fail_counter = 0
@@ -266,11 +379,35 @@ function get_data_tests(timedepend_df, baseline_df, other_vars, baseline_vars; t
                                     convert(Vector{Matrix{Float32}},xs1), convert(Vector{Matrix{Float32}},xs2), 
                                     convert(Vector{Vector{Float32}},xs_baseline), 
                                     convert(Vector{Vector{Float32}},tvals1), convert(Vector{Vector{Float32}},tvals2), 
-                                    ids1, ids2, ids)
+                                    ids)
     return mixedtestdata
 end
 
-function get_SMArtCARE_data(test::String, baseline_df, timedepend_df; var_names::Array{String}=String[], extended_output::Bool=false)
+"""
+    get_SMArtCARE_data_one_test(test::String, baseline_df, timedepend_df; var_names::Array{String}=String[], extended_output::Bool=false)
+
+Function to preprocess the SMArtCARE data for a specific test. The function returns an `SMATestData` struct with the extracted information 
+    on time-dependent and baseline variables, follow-up time points and IDs of all patients for whom the chosen test was conducted.
+
+From the provided input dataframes, the function first filters the time-dependent dataframe for patients that have the selected test conducted. 
+The dataframe is then subset to the variables of the items of the specific test. 
+The baseline dataframe is subset to the same patients. 
+For each patient, outlier time points are filtered out. 
+An outlier is classified as a time point where the difference to the previous time point is larger than 2 times the 
+interquartile range of all difference between subsequent time points for that patient.
+Additionally, the variance of the sum score of the test is calculated, to allow for potential further subsequent filtering.
+
+# Arguments
+- `test`: name of the motor function test for which the data is collected
+- `baseline_df`: DataFrame containing the baseline variables for all patients
+- `timedepend_df`: DataFrame containing the time-dependent variables for all patients
+
+# Keyword arguments
+- `var_names::Array{String}`: names of the variables to include in the time-dependent data
+- `extended_output::Bool`: if `true`, the function also returns the calculated variances of the sumscore for each patient 
+    and the time point masks that show which time points where filtered out for each patient. 
+"""
+function get_SMArtCARE_data_one_test(test::String, baseline_df, timedepend_df; var_names::Array{String}=String[], extended_output::Bool=false)
 
     testname="test_$test"
     
@@ -387,8 +524,30 @@ function get_SMArtCARE_data(test::String, baseline_df, timedepend_df; var_names:
     end
 end
 
+"""
+    logit(p)
+
+Function to calculate the logit transformation of a probability value `p`.
+
+# Arguments
+- `p`: probability value to transform
+
+# Returns
+- the logit-transformed value
+"""
 logit(p) = log(p) - log(1-p)
 
+"""
+    recode_SMArtCARE_data(testdata::SMATestData)
+
+Function to recode the item scores of the SMArtCARE data to logit-transformed values.
+
+# Arguments
+- `testdata::SMATestData`: the SMArtCARE data to recode
+
+# Returns
+- `SMATestData`: the recoded SMArtCARE data
+"""
 function recode_SMArtCARE_data(testdata::SMATestData)
     recoding_dict = Dict(0 => 0.1, 1 => 0.5, 2 => 0.9)
     recoding_dict_itema = Dict(0 => 0.1, 1 => 0.2, 2 => 0.3, 3 => 0.5, 4 => 0.7, 5 => 0.8, 6 => 0.9)
