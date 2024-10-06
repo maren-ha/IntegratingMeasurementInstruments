@@ -50,14 +50,14 @@ timedepend_df = timedepend_df[:,2:end]
 
 # preprocess data for a specific test 
 test = "rulm"
-testdata, sumscores, keep_timepoint_masks = get_SMArtCARE_data(test, baseline_df, timedepend_df, extended_output=true);
+testdata, sumscores, keep_timepoint_masks = get_SMArtCARE_data_one_test(test, baseline_df, timedepend_df, extended_output=true);
 # recode items 
 recoded_testdata = recode_SMArtCARE_data(testdata);
 
 subscale2_letters = ["j", "k", "l", "m", "n"]
 subscale2_names = collect("rulm_item$(letter)" for letter in subscale2_letters)
 subscale2_inds = [10, 11, 12, 13, 14]
-testdata2 = get_SMArtCARE_data(test, baseline_df, timedepend_df, var_names=subscale2_names);
+testdata2 = get_SMArtCARE_data_one_test(test, baseline_df, timedepend_df, var_names=subscale2_names);
 #xs2, xs_baseline2, tvals2, ids2 = testdata2.xs, testdata2.xs_baseline, testdata2.tvals, testdata2.ids;
 recoded_testdata2 = recode_SMArtCARE_data(testdata2);
 
@@ -175,11 +175,11 @@ for mod_no in 1:6
     m1 = odevae(modelargs1);
     m2 = odevae(modelargs2);
 
-    do_training_checkpoints(m1, m2, mixeddata, args_joint, epoch_checkpoints, lr, 
+    train_modification_with_checkpoints(m1, m2, mixeddata, args_joint, epoch_checkpoints, lr, 
         resultspath, modelargs1, modelargs2,
         save_individual_plots=true, save_delta_stats=true, fix_axis_limits=false)
         #save_individual_plots=false, save_delta_stats=false, fix_axis_limits=true)
-    #do_training_checkpoints(m1, m2, mixeddata, args_joint, 30, lr, configpath)
+    #train_modification_with_checkpoints(m1, m2, mixeddata, args_joint, 30, lr, configpath)
 end
 
 #########################################################################################
@@ -190,14 +190,14 @@ end
 
 # preprocess data again 
 test = "rulm"
-testdata, sumscores, keep_timepoint_masks = get_SMArtCARE_data(test, baseline_df, timedepend_df, extended_output=true);
+testdata, sumscores, keep_timepoint_masks = get_SMArtCARE_data_one_test(test, baseline_df, timedepend_df, extended_output=true);
 recoded_testdata = recode_SMArtCARE_data(testdata);
 #xs_names = names(timedepend_df)[9:28]
 
 subscale2_letters = ["j", "k", "l", "m", "n"]
 subscale2_names = collect("rulm_item$(letter)" for letter in subscale2_letters)
 subscale2_inds = [10, 11, 12, 13, 14]
-testdata2 = get_SMArtCARE_data(test, baseline_df, timedepend_df, var_names=subscale2_names);
+testdata2 = get_SMArtCARE_data_one_test(test, baseline_df, timedepend_df, var_names=subscale2_names);
 recoded_testdata2 = recode_SMArtCARE_data(testdata2);
 
 mixeddata = SMAMixedTestData("rulm_handle_weights", "rulm", 
@@ -252,7 +252,7 @@ Random.seed!(48)
 m1 = odevae(modelargs1);
 m2 = odevae(modelargs2);
 
-do_training_checkpoints(m1, m2, mixeddata, args_joint, no_mod_epoch_checkpoints, lr, 
+train_modification_with_checkpoints(m1, m2, mixeddata, args_joint, no_mod_epoch_checkpoints, lr, 
     resultspath, modelargs1, modelargs2,
     save_individual_plots=true, save_delta_stats=true, fix_axis_limits=false,
     #save_individual_plots=false, save_delta_stats=false,
@@ -270,12 +270,12 @@ do_training_checkpoints(m1, m2, mixeddata, args_joint, no_mod_epoch_checkpoints,
 
 subscale1_letters = string.([collect('a':'i')..., collect('o':'t')...])
 subscale1_names = collect("rulm_item$(letter)" for letter in subscale1_letters)
-testdata_sub = get_SMArtCARE_data(test, baseline_df, timedepend_df, var_names=subscale1_names);
+testdata_sub = get_SMArtCARE_data_one_test(test, baseline_df, timedepend_df, var_names=subscale1_names);
 recoded_testdata_sub = recode_SMArtCARE_data(testdata_sub);
 
 subscale2_letters = ["j", "k", "l", "m", "n"]
 subscale2_names = collect("rulm_item$(letter)" for letter in subscale2_letters)
-testdata2 = get_SMArtCARE_data(test, baseline_df, timedepend_df, var_names=subscale2_names);
+testdata2 = get_SMArtCARE_data_one_test(test, baseline_df, timedepend_df, var_names=subscale2_names);
 recoded_testdata2 = recode_SMArtCARE_data(testdata2);
 
 mixeddata = SMAMixedTestData("rulm_handle_weights", "rulm_no_shoulder", 
@@ -330,7 +330,7 @@ Random.seed!(48)
 m1 = odevae(modelargs1);
 m2 = odevae(modelargs2);
 
-do_training_checkpoints(m1, m2, mixeddata, args_joint, epoch_checkpoints, lr, 
+train_modification_with_checkpoints(m1, m2, mixeddata, args_joint, epoch_checkpoints, lr, 
     resultspath, modelargs1, modelargs2,
     save_individual_plots=true, save_delta_stats=true, fix_axis_limits=false
     #save_individual_plots=false, save_delta_stats=false, fix_axis_limits=true
