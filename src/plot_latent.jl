@@ -2,6 +2,19 @@
 # individual plots
 #------------------------------
 
+"""
+    get_max_tval(tvals1::Vector{Float32}, tvals2::Vector{Float32})
+
+Compute the maximum time value (`tmax`) across two time value vectors, and return a range from `0.0` to `tmax + 1` with step size `1.0`.
+If either vector is empty, the function returns the maximum time value from the other vector.
+
+# Arguments
+- `tvals1::Vector{Float32}`: First vector of time values.
+- `tvals2::Vector{Float32}`: Second vector of time values.
+
+# Returns
+- `trange::UnitRange{Float64}`: A range of values from `0.0` to `tmax + 1.0`, where `tmax` is the maximum time from both input vectors.
+"""
 function get_max_tval(tvals1::Vector{Float32}, tvals2::Vector{Float32})
     if !isempty(tvals1) && !isempty(tvals2)
         tmax = max(maximum(tvals1), maximum(tvals2))
@@ -12,7 +25,37 @@ function get_max_tval(tvals1::Vector{Float32}, tvals2::Vector{Float32})
     return trange 
 end
 
-function createindividualplot(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, args::LossArgs, patient_id; 
+"""
+    createindividualplot(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, patient_id; 
+                         axislabs::Bool=false, title::String="", 
+                         colors_ODE = ["#1f77b4", "#ff7f0e"], 
+                         colors_points = ["#1f77b4", "#1f77b4"; "#ff7f0e", "#ff7f0e"], 
+                         marker_shapes = [:c, :rect], marker_sizes = [6, 4])
+
+Creates an individual plot for a specific patient using latent representations from two 
+    ODE-VAE models (`m1` and `m2`), where both the joint latent ODE trajectory and the latent
+    representations from both measurement instruments before solving the ODE are shown. 
+
+# Arguments
+- `m1::odevae`: The first model for encoding and generating latent representations.
+- `m2::odevae`: The second model for encoding and generating latent representations.
+- `mixeddata::SMAMixedTestData`: The dataset containing test values for multiple patients.
+- `patient_id`: The ID of the patient for whom the plot is generated.
+
+# Keyword Arguments
+- `axislabs::Bool`: Whether to include axis labels. Defaults to `false`.
+- `title::String`: Title for the plot. Defaults to an empty string.
+- `colors_ODE::Vector{String}`: Colors for the ODE smooth trajectories. Defaults to `["#1f77b4", "#ff7f0e"]`.
+- `colors_points::Matrix{String}`: Colors for the scatter points, where the rows corresponds to the 
+    dimensions of the latent representation and the column to the measurement instrument.  
+    Defaults to `["#1f77b4", "#1f77b4"; "#ff7f0e", "#ff7f0e"]`.
+- `marker_shapes::Vector{Symbol}`: Marker shapes for measurement instrument 1 and 2 points. Defaults to `[:c, :rect]`.
+- `marker_sizes::Vector{Int}`: Marker sizes for measurement instrument 1 and 2 points. Defaults to `[6, 4]`.
+
+# Returns
+- `curplot`: The generated plot displaying smooth latent representations and scatter points for the given patient.
+"""
+function createindividualplot(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, patient_id; 
             axislabs::Bool=false, title::String="", 
             colors_ODE = ["#1f77b4" "#ff7f0e"], colors_points=["#1f77b4" "#1f77b4"; "#ff7f0e" "#ff7f0e"],
             marker_shapes = [:c, :rect], marker_sizes = [6, 4])
@@ -25,18 +68,9 @@ function createindividualplot(m1::odevae, m2::odevae, mixeddata::SMAMixedTestDat
     ODEparams = m1.dynamics(params)
     trange = get_max_tval(curtvals1, curtvals2)
     # get smoothμ
-    if args.firstonly # solve only at first tp like in Michelle's thesis 
-        if !isempty(t1)
-            smoothμ = hcat([generalsolution(tp, latentμ1[:,1], ODEparams...)[1] for tp in trange]...)
-        else
-            smoothμ = hcat([generalsolution(tp, latentμ2[:,1], ODEparams...)[1] for tp in trange]...)
-        end
-    else 
-        solarray1 = [generalsolution(solveatt - curtvals1[startind], latentμ1[:,startind], ODEparams...)[1] for startind in 1:length(curtvals1), solveatt in trange]
-        solarray2 = [generalsolution(solveatt - curtvals2[startind], latentμ2[:,startind], ODEparams...)[1] for startind in 1:length(curtvals2), solveatt in trange]
-        smoothμ = hcat([get_smoothμ(targetind, vcat(curtvals1, curtvals2), vcat(solarray1, solarray2), false, false) for targetind in 1:length(trange)]...)
-        #smoothμ = hcat([get_smoothμ(solveatt, vcat(curtvals1,curtvals2), hcat(latentμ1,latentμ2), hcat(latentlogσ1, latentlogσ2), ODEparams, args.weighting, args.skipt0) for solveatt in trange]...)
-    end
+    solarray1 = [generalsolution(solveatt - curtvals1[startind], latentμ1[:,startind], ODEparams...)[1] for startind in 1:length(curtvals1), solveatt in trange]
+    solarray2 = [generalsolution(solveatt - curtvals2[startind], latentμ2[:,startind], ODEparams...)[1] for startind in 1:length(curtvals2), solveatt in trange]
+    smoothμ = hcat([get_smoothμ(targetind, vcat(curtvals1, curtvals2), vcat(solarray1, solarray2), false, false) for targetind in 1:length(trange)]...)
     curplot = plot(collect(trange), smoothμ', 
                     line=(2, colors_ODE), 
                     labels = [L"\mathrm{smooth~}\mu_1" L"\mathrm{smooth~}\mu_2"]
@@ -52,13 +86,38 @@ function createindividualplot(m1::odevae, m2::odevae, mixeddata::SMAMixedTestDat
     plot!(title=title)
     return curplot
 end
-#
 
 #------------------------------
 # array of selected IDs
 #------------------------------
+"""
+    plot_selected_ids(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, selected_ids::Array;
+                      colors_ODE = ["#1f77b4", "#ff7f0e"], 
+                      colors_points = ["#1f77b4", "#1f77b4"; "#ff7f0e", "#ff7f0e"], 
+                      marker_shapes = [:c, :rect], marker_sizes = [6, 4])
 
-function plot_selected_ids(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, args::LossArgs, selected_ids::Array; 
+Creates a panel plot showing the latent trajectories of multiple selected patients. 
+For each selected patient, the latent trajectories are plotted by calling `createindividualplot`. 
+The panel layout is arranged in a 3x4 grid.
+
+# Arguments
+- `m1::odevae`: The first model for encoding and generating latent representations.
+- `m2::odevae`: The second model for encoding and generating latent representations.
+- `mixeddata::SMAMixedTestData`: The dataset containing test values for multiple patients.
+- `selected_ids::Array`: Array of patient IDs for which to create plots.
+
+# Keyword Arguments
+- `colors_ODE::Vector{String}`: Colors for the ODE smooth trajectories. Defaults to `["#1f77b4", "#ff7f0e"]`.
+- `colors_points::Matrix{String}`: Colors for the scatter points, where the rows corresponds to the 
+    dimensions of the latent representation and the column to the measurement instrument.  
+    Defaults to `["#1f77b4", "#1f77b4"; "#ff7f0e", "#ff7f0e"]`.
+- `marker_shapes::Vector{Symbol}`: Marker shapes for test 1 and test 2 points. Defaults to `[:c, :rect]`.
+- `marker_sizes::Vector{Int}`: Marker sizes for test 1 and test 2 points. Defaults to `[6, 4]`.
+
+# Returns
+- `panelplot`: A panel plot arranged in a 3x4 grid, displaying the latent trajectory plots for the selected patients.
+"""
+function plot_selected_ids(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, selected_ids::Array; 
     colors_ODE = ["#1f77b4" "#ff7f0e"], colors_points=["#1f77b4" "#1f77b4"; "#ff7f0e" "#ff7f0e"],
     marker_shapes = [:c, :rect], marker_sizes = [6, 4]
     )
@@ -66,24 +125,7 @@ function plot_selected_ids(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, 
     for (ind, patient_id) in enumerate(selected_ids)
         #println(ind)
         #println(patient_id)
-        push!(sel_array, createindividualplot(m1, m2, mixeddata, args, patient_id, 
-            title="$(patient_id)", colors_ODE=colors_ODE, colors_points=colors_points, 
-            marker_shapes=marker_shapes, marker_sizes=marker_sizes)
-        )
-    end
-    panelplot = plot(sel_array..., layout=(Int(length(selected_ids)/4),4), legend=false, size=(1200,round(200/3)*length(selected_ids)))
-    return panelplot
-end
-
-function plot_selected_ids_final(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, args::LossArgs, selected_ids::Array; 
-    colors_ODE = ["#1f77b4" "#ff7f0e"], colors_points=["#1f77b4" "#1f77b4"; "#ff7f0e" "#ff7f0e"],
-    marker_shapes = [:c, :rect], marker_sizes = [6, 4]
-    )
-    sel_array = []
-    for (ind, patient_id) in enumerate(selected_ids)
-        #println(ind)
-        #println(patient_id)
-        push!(sel_array, createindividualplot(m1, m2, mixeddata, args, patient_id, 
+        push!(sel_array, createindividualplot(m1, m2, mixeddata, patient_id, 
             title="$ind", colors_ODE=colors_ODE, colors_points=colors_points, 
             marker_shapes=marker_shapes, marker_sizes=marker_sizes)
         )
