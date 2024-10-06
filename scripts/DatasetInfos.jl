@@ -51,14 +51,14 @@ timedepend_df = CSV.File(string(data_path, "timedepend_df.csv"), truestrings = [
 baseline_df = baseline_df[:,Not("Column1")]
 timedepend_df = timedepend_df[:,Not("Column1")]
 
-# copy out some preprocessing from get_data_tests function (in load_data.jl) to get some statistics 
+# copy out some preprocessing from get_SMArtCARE_data_one_test function (in load_data.jl) to get some statistics 
 test1="hfmse"
 test2="rulm"
 
 other_vars = ["patient_id", "months_since_1st_test"]
 baseline_vars = names(baseline_df)[findall(x -> !(x ∈ ["cohort", "baseline_date"]), names(baseline_df))]
 
-mixeddata = get_data_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1=test1, test2=test2, remove_lessthan1=true);
+mixeddata = get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1=test1, test2=test2, remove_lessthan1=true);
 final_ids = Int.(mixeddata.ids)
 
 # extended preprocessing to get timedepend_select_df with correct ids 
@@ -169,7 +169,7 @@ zolg_timedepend_df = filter(x -> x.patient_id ∈ zolg_ids, timedepend_total_df)
 # get data for specific tests
 test1="hfmse"
 test2="rulm"
-mixeddata_zolg = get_data_tests(zolg_timedepend_df, zolg_baseline_df, other_vars, baseline_total_vars; test1=test1, test2=test2, remove_lessthan1=true); # 76
+mixeddata_zolg = get_SMArtCARE_data_one_test(zolg_timedepend_df, zolg_baseline_df, other_vars, baseline_total_vars; test1=test1, test2=test2, remove_lessthan1=true); # 76
 
 # get patient ids 
 final_ids_zolg = Int.(mixeddata_zolg.ids)
@@ -246,7 +246,7 @@ risdi_timedepend_df = filter(x -> x.patient_id ∈ risdi_ids, timedepend_total_d
 # get data for specific tests
 test1="hfmse"
 test2="rulm"
-mixeddata_risdi = get_data_tests(risdi_timedepend_df, risdi_baseline_df, other_vars, baseline_total_vars; test1=test1, test2=test2, remove_lessthan1=true); # 154
+mixeddata_risdi = get_SMArtCARE_data_one_test(risdi_timedepend_df, risdi_baseline_df, other_vars, baseline_total_vars; test1=test1, test2=test2, remove_lessthan1=true); # 154
 
 # get patient ids 
 final_ids_risdi = Int.(mixeddata_risdi.ids)
