@@ -82,7 +82,7 @@ risdi_timedepend_df = filter(x -> x.patient_id ∈ risdi_ids, timedepend_total_d
 test1="hfmse"
 test2="rulm"
 
-mixeddata_risdi = get_data_tests(risdi_timedepend_df, risdi_baseline_df, other_vars, baseline_total_vars; test1=test1, test2=test2, remove_lessthan1=true); # 154
+mixeddata_risdi = get_SMArtCARE_data_one_test(risdi_timedepend_df, risdi_baseline_df, other_vars, baseline_total_vars; test1=test1, test2=test2, remove_lessthan1=true); # 154
 n_patients_risdi = length(mixeddata_risdi.ids)
 
 
@@ -289,36 +289,40 @@ save_plots_dir = save_eval_dir #"Results/plots_penalties_risdiplam"
 
 #----------------------------------------
 # no penalties
-plot_no_penalty = plot(plot_selected_ids_final(no_penalty_models["m1"], no_penalty_models["m2"], 
-    mixeddata_risdi, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_no_penalty = plot(
+    plot_selected_ids(no_penalty_models["m1"], no_penalty_models["m2"], 
+        mixeddata_risdi, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="No ODE or adversarial penalty"
 )
 savefig(plot_no_penalty, joinpath(save_plots_dir, "no_penalty.pdf"))
 
 #----------------------------------------
 # only ODE penalty
-plot_only_ODE_penalty = plot(plot_selected_ids_final(only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
-    mixeddata_risdi, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_only_ODE_penalty = plot(
+    plot_selected_ids(only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
+        mixeddata_risdi, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="Only ODE penalty"
 )
 savefig(plot_only_ODE_penalty, joinpath(save_plots_dir, "only_ODE_penalty.pdf"))
 
 #----------------------------------------
 # only adversarial penalty
-plot_only_adversarial_penalty = plot(plot_selected_ids_final(only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
-    mixeddata_risdi, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_only_adversarial_penalty = plot(
+    plot_selected_ids(only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
+        mixeddata_risdi, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="Only adversarial penalty"
 )
 savefig(plot_only_adversarial_penalty, joinpath(save_plots_dir, "only_adversarial_penalty.pdf"))
 
 #----------------------------------------
 # both ODE and adversarial penalty
-plot_ODE_and_adversarial_penalty = plot(plot_selected_ids_final(ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
-    mixeddata_risdi, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_ODE_and_adversarial_penalty = plot(
+    plot_selected_ids(ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
+        mixeddata_risdi, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="ODE and adversarial penalty"
 )
 savefig(plot_ODE_and_adversarial_penalty, joinpath(save_plots_dir, "ODE_and_adversarial_penalty.pdf"))

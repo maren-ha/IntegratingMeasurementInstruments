@@ -37,10 +37,9 @@ include(joinpath(sourcedir, "plot_latent.jl"))
 # load data
 #------------------------------
 
-# new dataset
 data_path = joinpath("../dataset/")
 
-# load total data 
+# load data with all medications
 baseline_total_df = CSV.File(string(data_path, "baseline_df_total.csv"), truestrings = ["TRUE", "M"], falsestrings = ["FALSE", "F"], missingstring = ["NA"], decimal=',') |> DataFrame
 timedepend_total_df = CSV.File(string(data_path, "timedepend_df_total.csv"), truestrings = ["TRUE"], falsestrings = ["FALSE"], missingstring = ["NA"], decimal=',') |> DataFrame
 # remove column1
@@ -77,7 +76,7 @@ zolgensma_timedepend_df = filter(x -> x.patient_id ∈ zolgensma_ids, timedepend
 test1="hfmse"
 test2="rulm"
 
-mixeddata_zolg = get_data_tests(zolgensma_timedepend_df, zolgensma_baseline_df, other_vars, baseline_vars; test1=test1, test2=test2, remove_lessthan1=true); # 76
+mixeddata_zolg = get_SMArtCARE_data_one_test(zolgensma_timedepend_df, zolgensma_baseline_df, other_vars, baseline_vars; test1=test1, test2=test2, remove_lessthan1=true); # 76
 n_patients_zolg = length(mixeddata_zolg.ids)
 
 #----------------------------------------
@@ -89,20 +88,20 @@ dynamics = params_diagonalhomogeneous
 
 # init models
 modelargs1 = ModelArgs(p=size(mixeddata_zolg.xs1[1],1), 
-                    q=length(mixeddata_zolg.xs_baseline[1]), # zdim=2 default
+                    q=length(mixeddata_zolg.xs_baseline[1]), 
                     dynamics=dynamics,
                     bottleneck=false,
                     seed=1234,
-                    scale_sigmoid=2, # Struktur des ODE-net: zulässiger Bereich der ODE-Parameter
-                    add_diagonal=true # Struktur des ODE-net: Diagonal-Layer am Ende Ja/Nein
+                    scale_sigmoid=2, # structure of the baseline network: controls the range of the ODE parameters
+                    add_diagonal=true # structure of the baseline network: whether or not a diagonal transformation is added
 )
 modelargs2 = ModelArgs(p=size(mixeddata_zolg.xs2[1],1), 
                     q=length(mixeddata_zolg.xs_baseline[1]), # zdim=2 default
                     dynamics=dynamics,
                     bottleneck=false,
                     seed=1234,
-                    scale_sigmoid=2, # Struktur des ODE-net: zulässiger Bereich der ODE-Parameter
-                    add_diagonal=true # Struktur des ODE-net: Diagonal-Layer am Ende Ja/Nein
+                    scale_sigmoid=2, 
+                    add_diagonal=true
 )
 
 #----------------------------------------
@@ -192,8 +191,6 @@ ODE_and_adversarial_penalty_models = Dict("m1" => deepcopy(m1), "m2" => deepcopy
 #----------------------------------------
 # evaluation
 
-# variable 23 "onset_prenatal" is excluded from the linear model because it is nearly all zero (sum=1)
-
 # make corresponding directory to save results as CSV files 
 save_eval_dir = "../results/zolgensma"
 !isdir(save_eval_dir) && mkdir(save_eval_dir)
@@ -265,36 +262,40 @@ save_plots_dir = save_eval_dir #"Results/plots_penalties_risdiplam"
 
 #----------------------------------------
 # no penalties
-plot_no_penalty = plot(plot_selected_ids_final(no_penalty_models["m1"], no_penalty_models["m2"], 
-    mixeddata_zolg, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_no_penalty = plot(
+    plot_selected_ids(no_penalty_models["m1"], no_penalty_models["m2"], 
+        mixeddata_zolg, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="No ODE or adversarial penalty"
 )
 savefig(plot_no_penalty, joinpath(save_plots_dir, "no_penalty.pdf"))
 
 #----------------------------------------
 # only ODE penalty
-plot_only_ODE_penalty = plot(plot_selected_ids_final(only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
-    mixeddata_zolg, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_only_ODE_penalty = plot(
+    plot_selected_ids(only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
+        mixeddata_zolg, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="Only ODE penalty"
 )
 savefig(plot_only_ODE_penalty, joinpath(save_plots_dir, "only_ODE_penalty.pdf"))
 
 #----------------------------------------
 # only adversarial penalty
-plot_only_adversarial_penalty = plot(plot_selected_ids_final(only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
-    mixeddata_zolg, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_only_adversarial_penalty = plot(
+    plot_selected_ids(only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
+        mixeddata_zolg, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="Only adversarial penalty"
 )
 savefig(plot_only_adversarial_penalty, joinpath(save_plots_dir, "only_adversarial_penalty.pdf"))
 
 #----------------------------------------
 # both ODE and adversarial penalty
-plot_ODE_and_adversarial_penalty = plot(plot_selected_ids_final(ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
-    mixeddata_zolg, args_joint, selected_ids, 
-    colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
+plot_ODE_and_adversarial_penalty = plot(
+    plot_selected_ids(ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
+        mixeddata_zolg, args_joint, selected_ids, 
+        colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="ODE and adversarial penalty"
 )
 savefig(plot_ODE_and_adversarial_penalty, joinpath(save_plots_dir, "ODE_and_adversarial_penalty.pdf"))
