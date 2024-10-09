@@ -95,12 +95,12 @@ function train_modification_with_checkpoints(m1::odevae, m2::odevae, mixeddata::
         # plot randomly selected individuals
         Random.seed!(789)
         plot_ids_joint = rand(mixeddata.ids, 12)
-        plot_selected_ids(m1, m2, mixeddata, args_joint, plot_ids_joint)
+        plot_selected_ids(m1, m2, mixeddata, plot_ids_joint)
 
         Random.seed!(789)
         for iter in 1:5
             plot_ids_joint = rand(mixeddata.ids, 12)
-            tmp = plot_selected_ids(m1, m2, mixeddata, args_joint, plot_ids_joint)
+            tmp = plot_selected_ids(m1, m2, mixeddata, plot_ids_joint)
             plot!(tmp, plot_title = "$(tmp_description)_$(epoch_name)epochs)")
             save_individual_plots && savefig(tmp, joinpath(configpath, "Individuals_$(iter)_$(epoch_name)epochs.pdf"))
         end
