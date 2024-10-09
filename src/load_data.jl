@@ -203,7 +203,8 @@ Additionally, the variance of the sum score of the test is calculated, to allow 
 # Returns
 - `SMAMixedTestData`: A struct containing the preprocessed data for the two specified tests
 """
-function get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1::String="hfmse", test2::String="rulm", remove_lessthan1::Bool=false)
+function get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; 
+    test1::String="hfmse", test2::String="rulm", remove_lessthan1::Bool=false)
 
     testname1, testname2 = get_test_name(test1), get_test_name(test2)
     notest1inds = findall(x->ismissing(x),timedepend_df[:,testname1])
@@ -242,21 +243,9 @@ function get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, ba
     @showprogress for patient_id in select_ids
         # @info patient_id
         curdf = filter(x -> x.patient_id == patient_id, timedepend_select_df)
-
-        #@time unique!(curdf)
-        #if nrow(unique(curdf)) != nrow(curdf)
-        #    @warn "there were duplicate rows for patient id $(patient_id), skipping these..."
-        #    unique!(curdf)
-        #end
-        curidx1, curidx2 = get_test_rows(curdf, test1, test2)
-
+        curidx1, curidx2 = get_test_rows(curdf, get_test_name(test1), get_test_name(test2))
         # other important time-dependent variables
         other_vars = ["patient_id", "months_since_1st_test"]
-        #other_vars = ["patient_id", "months_since_1st_test", "feeding_tube", 
-        #    "scoliosis_yn", "pain_yn", "fatigue_yn", "ventilation", "adverse_event", 
-        #    "fvc_yn", "fvc_percent",
-        #    "gen_impr", "mf_impr", "rf_impr"
-        #]
 
         # test1 table
         curdf1 = select(curdf[curidx1,:],vcat(other_vars,test1_vars[test1_vars.!=testname1]))           
@@ -522,6 +511,150 @@ function get_SMArtCARE_data_one_test(test::String, baseline_df, timedepend_df; v
     else
         return testdata 
     end
+end
+
+function get_dummy_data_one_test(testname::String, baseline_df, timedepend_df; var_names = [])
+        # filter for patients that have the test conducted
+        timedepend_select_df=timedepend_df[findall(x-> !ismissing(x),timedepend_df[:,testname]),:]
+        timedepend_select_df=select(timedepend_select_df,Not(testname))
+        # get the variables of the items of the specific test and subset to these 
+        test_vars = filter(x -> occursin(testname, x), names(timedepend_select_df))
+        select_vars = vcat(["id", "tvals"], test_vars)
+        timedepend_select_df=select(timedepend_select_df,select_vars)
+
+        if isempty(var_names) # if no var names are provided, take all 
+            inds_to_keep = findall(x -> !(x ∈ ["id", "tvals"]), names(timedepend_select_df))
+        else
+            inds_to_keep = findall(x -> x ∈ var_names, names(timedepend_select_df))
+        end
+    
+        baseline_select_df = filter(x -> x.id in unique(timedepend_select_df[:,:id]), baseline_df)
+    
+        timedepend_xs = []
+        tvals = []
+        baseline_xs = []
+        patient_ids = []
+    
+        for patient_id in unique(timedepend_select_df[:,:id])
+            # get timedependent variables
+            curdf = filter(x -> x.id == patient_id, timedepend_select_df)
+            # get tvals 
+            curtvals = curdf[:,:tvals]
+            if !(0 in curtvals)
+                curtvals.-=minimum(curtvals)
+            end
+            if length(curtvals) <= 1
+                continue
+            end
+            push!(tvals, vec(curtvals))
+            # get xvals
+            curxs = transpose(Matrix(curdf[:,inds_to_keep]))
+            curxs = convert.(Float32, curxs)
+            push!(timedepend_xs, curxs)
+            # get baseline variables 
+            curdf_baseline = filter(x -> x.id == patient_id, baseline_select_df)
+            curbaselinexs = transpose(Matrix(curdf_baseline[:,2:end])) # again to omit patient_id
+            curbaselinexs = vec(curbaselinexs)
+            push!(baseline_xs, curbaselinexs)
+            # track patient id 
+            push!(patient_ids, patient_id)
+        end
+        # collect into testdata struct 
+        testdata = SMATestData(testname, 
+                convert(Vector{Matrix{Float32}},timedepend_xs),
+                convert(Vector{Vector{Float32}},baseline_xs), 
+                convert(Vector{Vector{Float32}},tvals), 
+                Int.(patient_ids)
+        )    
+end
+
+function get_dummy_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; 
+    testname1::String="test1", testname2::String="test2", remove_lessthan1::Bool=false)
+
+    notest1inds = findall(x->ismissing(x),timedepend_df[:,testname1])
+    notest2inds = findall(x->ismissing(x),timedepend_df[:,testname2])
+    timedepend_select_df=timedepend_df[Not(intersect(notest1inds, notest2inds)),:]
+    test1_vars = filter(x -> occursin(testname1, x), names(timedepend_select_df))
+    test2_vars = filter(x -> occursin(testname2, x), names(timedepend_select_df))
+    select_vars = vcat(other_vars, test1_vars, test2_vars)
+    timedepend_select_df=select(timedepend_select_df,select_vars)
+    
+    unique!(timedepend_select_df) 
+    baseline_select_df = filter(x -> x.id in unique(timedepend_select_df[:,:id]), baseline_df)
+
+    @assert sort(unique(baseline_select_df[:,:id])) == sort(unique(timedepend_select_df[:,:id]))
+    sort!(baseline_select_df, [:id])
+    sort!(timedepend_select_df, [:id])
+    @assert unique(baseline_select_df[:,:id]) == unique(timedepend_select_df[:,:id])    
+
+    xs1 = []
+    xs2 = []
+    tvals1 = []
+    tvals2 = []
+    xs_baseline = []
+    ids = []
+
+    for patient_id in unique(timedepend_select_df.id)
+        # @info patient_id
+        curdf = filter(x -> x.id == patient_id, timedepend_select_df)
+        # filter rows for each test
+        linetest1 = []
+        linetest2 = []
+        lineboth = []
+        for i in 1:size(curdf,1)
+            if  ismissing(curdf[i,testname1]) && curdf[i,testname2]==2
+                push!(linetest2,i)
+            elseif ismissing(curdf[i,testname2]) && curdf[i,testname1]==1
+                push!(linetest1,i)
+            elseif curdf[i,testname1]==1 && curdf[i,testname2]==2
+                push!(lineboth,i)
+            end
+        end
+        curidx1=sort(vcat(linetest1,lineboth))
+        curidx2=sort(vcat(linetest2,lineboth))
+    
+        # test1 table
+        curdf1 = select(curdf[curidx1,:],vcat(other_vars,test1_vars[test1_vars.!=testname1]))           
+        curtvals1 = curdf1[:,:tvals]
+        # test2 table
+        curdf2 = select(curdf[curidx2,:],vcat(other_vars,test2_vars[test2_vars.!=testname2]))           
+        curtvals2 = curdf2[:,:tvals]
+
+        # remove patients with not more than 1 observation per test
+        if length(curtvals1)<=1 && length(curtvals2)<=1 && remove_lessthan1
+            continue
+        end
+
+        # remove duplicates in time points 
+        @assert nrow(curdf1) == length(curtvals1)
+        @assert nrow(curdf2) == length(curtvals2)
+
+        #Shift tvals so that the first value starts with 0
+        curtvals1, curtvals2 = shift_tvals!(curtvals1, curtvals2)
+
+        curxs1 = transpose(Matrix(curdf1[:,3:end])) # omitting first and second column because they contain ID and timestamp
+        curxs1 = convert.(Float32, curxs1)
+        curxs2 = transpose(Matrix(curdf2[:,3:end])) # omitting first and second column because they contain ID and timestamp
+        curxs2 = convert.(Float32, curxs2)
+
+        # baseline table 
+        curdf_baseline = filter(x -> x.id == patient_id, baseline_select_df[:,baseline_vars])
+        curbaselinexs = vec(Matrix(curdf_baseline[:,2:end])) # again to omit patient_id
+
+        # append vectors
+        push!(ids, patient_id)
+        push!(xs1, curxs1)
+        push!(xs2, curxs2)
+        push!(tvals1, Float32.(curtvals1))
+        push!(tvals2, Float32.(curtvals2))
+        push!(xs_baseline, curbaselinexs)
+    end
+    mixedtestdata = SMAMixedTestData(testname1, testname2, 
+                                    convert(Vector{Matrix{Float32}},xs1), convert(Vector{Matrix{Float32}},xs2), 
+                                    convert(Vector{Vector{Float32}},xs_baseline), 
+                                    convert(Vector{Vector{Float32}},tvals1), convert(Vector{Vector{Float32}},tvals2), 
+                                    ids)
+    return mixedtestdata
 end
 
 """
