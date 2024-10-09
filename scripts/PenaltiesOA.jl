@@ -1,3 +1,18 @@
+"""
+This script reproduces the results from applying the approach on the real SMA dataset of patients treated with Onasemnogene Abeparvovec (OA), 
+using different penalties in the loss function, as shown in **Section A.5**, **Table 6** and **Figure 7**.
+
+Specifically, it creates 
+    - a table of prediction errors as a `DataFrame` object called `all_prederrs_df`, which corresponds to **Table 4**, 
+        and saves it as a CSV file named `prediction_errors.csv` in the `results/penalties_OA` directory. 
+    - plots of the latent representations for 12 randomly selected patients for each penalty version, which correspond to the four panels shown in **Figure 7**,
+        and saves them as PDF files in the same directory (`results/penalties_OA`). The title corresponds to the penalty version, namely 
+        -  "no_penalty.pdf"
+        - "only_ODE_penalty.pdf"
+        - "only_adversarial_penalty.pdf"
+        - "ODE_and_adversarial_penalty.pdf"
+"""
+
 #------------------------------
 # setup
 #------------------------------
@@ -192,7 +207,7 @@ ODE_and_adversarial_penalty_models = Dict("m1" => deepcopy(m1), "m2" => deepcopy
 # evaluation
 
 # make corresponding directory to save results as CSV files 
-save_eval_dir = "../results/zolgensma"
+save_eval_dir = "../results/penalties_OA"
 !isdir(save_eval_dir) && mkdir(save_eval_dir)
 
 all_prederrs_df = DataFrame(
@@ -257,14 +272,14 @@ Random.seed!(786)
 selected_ids = rand(mixeddata_zolg.ids, 12)
 
 # make corresponding directory
-save_plots_dir = save_eval_dir #"Results/plots_penalties_risdiplam"
+save_plots_dir = save_eval_dir 
 !isdir(save_plots_dir) && mkdir(save_plots_dir)
 
 #----------------------------------------
 # no penalties
 plot_no_penalty = plot(
     plot_selected_ids(no_penalty_models["m1"], no_penalty_models["m2"], 
-        mixeddata_zolg, args_joint, selected_ids, 
+        mixeddata_zolg, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="No ODE or adversarial penalty"
 )
@@ -274,7 +289,7 @@ savefig(plot_no_penalty, joinpath(save_plots_dir, "no_penalty.pdf"))
 # only ODE penalty
 plot_only_ODE_penalty = plot(
     plot_selected_ids(only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
-        mixeddata_zolg, args_joint, selected_ids, 
+        mixeddata_zolg, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="Only ODE penalty"
 )
@@ -284,7 +299,7 @@ savefig(plot_only_ODE_penalty, joinpath(save_plots_dir, "only_ODE_penalty.pdf"))
 # only adversarial penalty
 plot_only_adversarial_penalty = plot(
     plot_selected_ids(only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
-        mixeddata_zolg, args_joint, selected_ids, 
+        mixeddata_zolg, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="Only adversarial penalty"
 )
@@ -294,7 +309,7 @@ savefig(plot_only_adversarial_penalty, joinpath(save_plots_dir, "only_adversaria
 # both ODE and adversarial penalty
 plot_ODE_and_adversarial_penalty = plot(
     plot_selected_ids(ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
-        mixeddata_zolg, args_joint, selected_ids, 
+        mixeddata_zolg, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], marker_sizes = [7, 5]), 
     plot_title="ODE and adversarial penalty"
 )
