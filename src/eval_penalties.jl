@@ -59,14 +59,10 @@ function eval_prediction(m1::odevae, m2::odevae, mixeddata::SMAMixedTestData, ar
         t2inds = findall(x -> x ∈ t2, tvals)
         # collect all solutions into an array 
         solarray = [generalsolution(solveatt - [t1;t2][startind], hcat(latentμ1, latentμ2)[:,startind], ODEparams...)[1] for startind in 1:lt1+lt2, solveatt in tvals]
-        smoothμarray = hcat([get_smoothμ(targetind, [t1; t2], solarray, args.weighting, args.skipt0) for targetind in 1:lt]...)
+        smoothμarray = hcat([get_smoothμ(targetind, [t1; t2], solarray, true, true) for targetind in 1:lt]...)
     
-        if !args.firstonly
-            smoothμ1 = smoothμarray[:,t1inds]
-            smoothμ2 = smoothμarray[:,t2inds]
-        else
-            error("Evaluation not implemented for `args.firstonly`=true")
-        end
+        smoothμ1 = smoothμarray[:,t1inds]
+        smoothμ2 = smoothμarray[:,t2inds]
         
         ODEprederr1 = 1 / lt1 .* sum((latentμ1 .- smoothμ1).^2) # here, 1 and 2 refers to the measurement instruments
         ODEprederr2 = 1 / lt2 .* sum((latentμ2 .- smoothμ2).^2)
