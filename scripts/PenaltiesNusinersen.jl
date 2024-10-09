@@ -1,3 +1,18 @@
+"""
+This script reproduces the results from applying the approach on the real SMA dataset of patients treated with Nusinersen 
+using different penalties in the loss function, as shown in **Section 3.4, Figure 4** and **Table 1**.
+
+Specifically, it creates 
+    - a table of prediction errors as a `DataFrame` object called `all_prederrs_df`, which corresponds to **Table 1**, 
+        and saves it as a CSV file named `prediction_errors.csv` in the `results/penalties` directory. 
+    - plots of the latent representations for 12 randomly selected patients for each penalty version, which correspond to the four panels shown in **Figure 4**,
+        and saves them as PDF files in the same directory (`results/penalties`). The title corresponds to the penalty version, namely 
+        - "no_penalty.pdf"
+        - "only_ODE_penalty.pdf"
+        - "only_adversarial_penalty.pdf"
+        - "ODE_and_adversarial_penalty.pdf"
+"""
+
 #------------------------------
 # setup
 #------------------------------
@@ -39,30 +54,39 @@ include(joinpath(sourcedir, "plot_latent.jl"))
 
 data_path = joinpath("../dataset/")
 
-baseline_df = CSV.File(string(data_path, "baseline_df.csv"), truestrings = ["TRUE", "M"], falsestrings = ["FALSE", "F"], missingstring = ["NA"], decimal=',') |> DataFrame
-timedepend_df = CSV.File(string(data_path, "timedepend_df.csv"), truestrings = ["TRUE"], falsestrings = ["FALSE"], missingstring = ["NA"], decimal=',') |> DataFrame
+USE_DUMMY_DATA = true
 
-# remove "Column1"
-baseline_df = baseline_df[:,2:end]
-timedepend_df = timedepend_df[:,2:end]
+if USE_DUMMY_DATA
+    mkdir("../results/dummy")
+    # read data
+    baseline_df = CSV.File(string(data_path, "dummy_baseline_df.csv")) |> DataFrame
+    timedepend_df = CSV.File(string(data_path, "dummy_timedepend_df.csv")) |> DataFrame
+    # preprocess
+    testname1, testname2 = "test1", "test2"
+    other_vars = ["id", "tvals"]
+    baseline_vars = names(baseline_df)
 
-other_vars = ["patient_id", "months_since_1st_test", "feeding_tube", 
-            "scoliosis_yn", "pain_yn", "fatigue_yn", "ventilation", "adverse_event", 
-            "fvc_yn", "fvc_percent",
-            "gen_impr", "mf_impr", "rf_impr"
-]
+    get_dummy_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; 
+        testname1="test1", testname2="test2", remove_lessthan1=true
+    )
+else
+    baseline_df = CSV.File(string(data_path, "baseline_df.csv"), truestrings = ["TRUE", "M"], falsestrings = ["FALSE", "F"], missingstring = ["NA"], decimal=',') |> DataFrame
+    timedepend_df = CSV.File(string(data_path, "timedepend_df.csv"), truestrings = ["TRUE"], falsestrings = ["FALSE"], missingstring = ["NA"], decimal=',') |> DataFrame
 
-baseline_vars = names(baseline_df)[findall(x -> !(x ∈ ["cohort", "baseline_date"]), names(baseline_df))]
-#baseline_vars = names(baseline_df)[findall(x -> !(x ∈ ["cohort", "baseline_date", "birth_d", "drug_sma"]), names(baseline_df))]
+    # remove "Column1"
+    baseline_df = baseline_df[:,2:end]
+    timedepend_df = timedepend_df[:,2:end]
 
-#------------------------------
-# get data for specific tests
-#------------------------------
+    other_vars = ["patient_id", "months_since_1st_test"]
+    baseline_vars = names(baseline_df)[findall(x -> !(x ∈ ["cohort", "baseline_date"]), names(baseline_df))]
 
-test1="hfmse"
-test2="rulm"
-mixeddata = get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; test1=test1, test2=test2, remove_lessthan1=true);
-
+    # extract data for specific tests
+    test1="hfmse"
+    test2="rulm"
+    mixeddata = get_SMArtCARE_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; 
+        test1=test1, test2=test2, remove_lessthan1=true
+    );
+end
 #------------------------------
 # train jointly from scratch  
 #------------------------------
@@ -102,7 +126,7 @@ args_joint=LossArgs(
     variancepenaltyoffset = 1.0f0, 
 )
 # prepare training
-trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)
+trainingargs_joint=TrainingArgs(warmup=false, epochs=USE_DUMMY_DATA ? 5 : 10, lr=0.00003)
 # train 
 train_mixed_model!(m1, m2, mixeddata, args_joint, trainingargs_joint, verbose=false, plotting=false)
 # save trained models 
@@ -122,7 +146,7 @@ args_joint=LossArgs(
     variancepenaltyoffset = 1.0f0
 )
 # prepare training
-trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)# lr=0.00008
+trainingargs_joint=TrainingArgs(warmup=false, epochs=USE_DUMMY_DATA ? 5 : 10, lr=0.00003)# lr=0.00008
 # train 
 train_mixed_model!(m1, m2, mixeddata, args_joint, trainingargs_joint, verbose=false, plotting=false)
 
@@ -142,7 +166,7 @@ args_joint=LossArgs(
     variancepenaltyoffset = 1.0f0
 )
 # prepare training
-trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)# lr=0.00008
+trainingargs_joint=TrainingArgs(warmup=false, epochs=USE_DUMMY_DATA ? 5 : 10, lr=0.00003)# lr=0.00008
 # train 
 train_mixed_model!(m1, m2, mixeddata, args_joint, trainingargs_joint, verbose=false, plotting=false)
 
@@ -162,7 +186,7 @@ args_joint=LossArgs(
     variancepenaltyoffset = 1.0f0
 )
 # prepare training
-trainingargs_joint=TrainingArgs(warmup=false, epochs=10, lr=0.00003)# lr=0.00008
+trainingargs_joint=TrainingArgs(warmup=false, epochs=USE_DUMMY_DATA ? 5 : 10, lr=0.00003)# lr=0.00008
 # train 
 train_mixed_model!(m1, m2, mixeddata, args_joint, trainingargs_joint, verbose=false, plotting=false)
 
@@ -172,7 +196,7 @@ ODE_and_adversarial_penalty_models = Dict("m1" => deepcopy(m1), "m2" => deepcopy
 # evaluation
 
 # make corresponding directory to save results as CSV files 
-save_eval_dir = "../results/penalties"
+save_eval_dir = USE_DUMMY_DATA ? "../results/dummy/penalties" : "../results/penalties"
 !isdir(save_eval_dir) && mkdir(save_eval_dir)
 
 all_prederrs_df = DataFrame(
@@ -251,7 +275,7 @@ save_plots_dir = save_eval_dir
 plot_no_penalty = plot(
     plot_selected_ids(
         no_penalty_models["m1"], no_penalty_models["m2"], 
-        mixeddata, args_joint, selected_ids, 
+        mixeddata, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
         marker_sizes = [7, 5]
     ), 
@@ -264,7 +288,7 @@ savefig(plot_no_penalty, joinpath(save_plots_dir, "no_penalty.pdf"))
 plot_only_ODE_penalty = plot(
     plot_selected_ids(
         only_ODE_penalty_models["m1"], only_ODE_penalty_models["m2"], 
-        mixeddata, args_joint, selected_ids, 
+        mixeddata, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
         marker_sizes = [7, 5]
     ), 
@@ -278,7 +302,7 @@ savefig(plot_only_ODE_penalty, joinpath(save_plots_dir, "only_ODE_penalty.pdf"))
 plot_only_adversarial_penalty = plot(
     plot_selected_ids(
         only_adversarial_penalty_models["m1"], only_adversarial_penalty_models["m2"], 
-        mixeddata, args_joint, selected_ids, 
+        mixeddata, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
         marker_sizes = [7, 5]
     ), 
@@ -292,7 +316,7 @@ savefig(plot_only_adversarial_penalty, joinpath(save_plots_dir, "only_adversaria
 plot_ODE_and_adversarial_penalty = plot(
     plot_selected_ids(
         ODE_and_adversarial_penalty_models["m1"], ODE_and_adversarial_penalty_models["m2"], 
-        mixeddata, args_joint, selected_ids, 
+        mixeddata, selected_ids, 
         colors_points = ["#3182bd" "#9ecae1"; "#e6550d" "#fdae6b"], 
         marker_sizes = [7, 5]
     ), 
