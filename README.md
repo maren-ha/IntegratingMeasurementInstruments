@@ -34,8 +34,27 @@ Our results indicate that domain adaptation might be more generally useful in st
   -  `plot_latent.jl` contains the code for plotting the latent trajectories and the ODE solutions
 - the `scripts` folder contains the scripts for running the experiments in the paper: 
   - `DatasetInfos.jl` reproduces the statistics about the numbers of patients and visits and patterns of measurement instrument availability and the corresponding visualizations shown in **Section A.3**, **Tables 2 and 3** and **Figures 5 and 6**.
-  - `SyntheticModifications.jl` reproduces the results on the synthetic dataset scenarios based on introducing various discrepancies, specifically **Figures 2 and 3 in Section 3.3** and **Tables 4 and 5 in Section A.4**.
+  - `SyntheticModifications_FinalResults.jl` reproduces the results on the synthetic dataset scenarios based on introducing various discrepancies, specifically **Figures 2 and 3 in Section 3.3** and **Tables 4 and 5 in Section A.4**.
+  - `SyntheticModifications_Investigation.jl` can also reproduce the results on the synthetic dataset scenarios, but with more extensive visualizations and additional results saved at intermediate steps. To get only specifically what is shown in the paper, run the shorter script above.
   - `PenaltiesNusinersen.jl` reproduces the results from applying the approach on the real SMA dataset of patients treated with Nusinersen using different penalties in the loss function, as shown in **Section 3.4, Figure 4** and **Table 1**. 
   - `PenaltiesOA.jl` reproduces the results from applying the approach on an additional population of SMA patients treated with a different medication, Onasemnogene Abeparvovec (OA), again using different penalties in the loss function, as shown in **Section A.5,Table 6** and **Figure 7**. 
 - the `notebooks` folder contains Jupyter notebooks showcasing exemplary analyses from the paper 
 - the `results` folder contains the results of the experiments in the paper, which are generated automatically within the scripts
+
+## Running the code 
+
+The original data cannot be shared due to ethical and data protection reasons. To show that the code runs and produces the corresponding  figures and tables in the correct structure, we provide a synthetic dataset with a similar format in the `dataset` folder, specifically the two files `dummy_timedepend_df.csv` and `dummy_baseline_df.csv`. 
+
+The scripts `SyntheticModifications_FinalResults.jl` and `PenaltiesNusinersen.jl` can be run using this dummy data. To do so, please set at the beginning of the script, before the loading the data:
+
+````
+USE_DUMMY_DATA = true
+````
+
+Then, execute the entire script. The generated results are automatically saved in a subfolder `results/dummy/modifications` or `results/dummy/penalties`, respectively. Note that the results will naturally not be identical to the figures and tables in the manuscript, which have been generated using the original data. When the original data is used, all figures and tables are saved automatically directly in `results`, with the same file structures and filenames. 
+
+To show that the code using the original data produces the same results as in the paper, we provide two Jupyter notebooks where plots and tables from the paper are generated based on the real dataset.
+
+The code is written in [Julia](https://julialang.org/downloads/), using version 1.8.3 (see [here](https://julialang.org/downloads/oldreleases/) to download previous releases). 
+The required packages and their versions are specified in the `Project.toml` and `Manifest.toml` files in the main folder and automatically loaded/installed at the beginning of each script with the `Pkg.activate()` and `Pkg.instantiate()` commands. 
+For more information on Julia environments, please refer to the [official documentation](https://pkgdocs.julialang.org/v1/environments/).
