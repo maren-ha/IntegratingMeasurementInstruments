@@ -64,13 +64,14 @@ data_path = joinpath("../dataset/")
 USE_DUMMY_DATA = true
 
 if USE_DUMMY_DATA
+    !isdir("../results/dummy") && mkdir("../results/dummy")
     # read data
     baseline_df = CSV.File(string(data_path, "dummy_baseline_df.csv")) |> DataFrame
     timedepend_df = CSV.File(string(data_path, "dummy_timedepend_df.csv")) |> DataFrame
     # preprocess
     test = testname = "test1"
     recoded_testdata = get_dummy_data_one_test(testname, baseline_df, timedepend_df)
-    sumscores = [vec(sum(testdata.xs[i],dims=1)) for i in 1:length(testdata.xs[:,1])]
+    sumscores = [vec(sum(recoded_testdata.xs[i],dims=1)) for i in 1:length(recoded_testdata.xs[:,1])]
     # subscale for smaller second instrument
     subscale2_names = collect("test1_item$(i)" for i in 11:15)
     orig_recoded_testdata2 = get_dummy_data_one_test(testname, baseline_df, timedepend_df, var_names=subscale2_names)
@@ -132,7 +133,7 @@ penaltytype = :sum_ratio
 penaltyweight = 5.0f0
 lr = 0.001
 penaltyoffset = 1.0f0
-epochs = 30
+epochs = USE_DUMMY_DATA ? 5 : 30
 
 # loss args
 args_joint=LossArgs(
@@ -378,20 +379,25 @@ overall_delta_stats = DataFrame(
 penaltyweight = 5.0f0
 cur_delta_df = nothing
 
+parentdir = USE_DUMMY_DATA ? "../results/dummy/modifications/" : "../results_RR/modifications/"
+
 # Numbered modifications 1-6
 for mod_no in [1,2,3,4,6]
     @info mod_no
-    testdata = deepcopy(orig_recoded_testdata2)
-    recoded_testdata2, pathname = modify_data(
-        testdata, sumscores, mod_no, 
-        p_dropout, shrink_prob_offset, shift, p_subgroup, sumscore_cutoff, 
-        parentdir
-    );
-    resultspath = pathname
+    if mod_no == 1
+        resultspath = joinpath(parentdir, "mod_1_p_dropout_$(p_dropout)")
+    elseif mod_no == 2
+        resultspath = joinpath(parentdir, "mod_2_shrink_prob_offset_$(shrink_prob_offset)")
+    elseif mod_no == 3
+        resultspath = joinpath(parentdir, "mod_3_shift_$(shift)")
+    elseif mod_no == 4
+        resultspath = joinpath(parentdir, "mod_4_shift_$(shift)_p_subgroup_$(p_subgroup)")
+    elseif mod_no == 6
+        resultspath = joinpath(parentdir, "mod_6_sumscore_cutoff")
+    end
     modification_string = split(resultspath, "/")[end]
     mod_no == 6 && (penaltyweight = 2.0f0)
-    curpath = resultspath
-    cur_delta_df = CSV.read(joinpath(curpath, "delta_above_diagonal_stats.csv"), DataFrame)
+    cur_delta_df = CSV.read(joinpath(resultspath, "delta_above_diagonal_stats.csv"), DataFrame)
     cur_delta_df.epoch .= 30
     cur_delta_df.modification .= modification_string
     append!(overall_delta_stats, cur_delta_df)
@@ -401,8 +407,7 @@ end
 modification_string = "larger_test_without_subscale"
 resultspath = joinpath(parentdir, modification_string)
 penaltyweight = 5.0f0
-curpath = resultspath
-cur_delta_df = CSV.read(joinpath(curpath, "delta_above_diagonal_stats.csv"), DataFrame)
+cur_delta_df = CSV.read(joinpath(resultspath, "delta_above_diagonal_stats.csv"), DataFrame)
 cur_delta_df.epoch .= 30
 cur_delta_df.modification .= modification_string
 append!(overall_delta_stats, cur_delta_df)
@@ -412,18 +417,14 @@ modification_string = "no_modification"
 resultspath = joinpath(parentdir, modification_string)
 epoch_checkpoints = [2, 5, 10, 12, 15, 18, 20, 25, 30]
 penaltyweight = 5.0f0
-curpath = resultspath
 for epoch in epoch_checkpoints
-    cur_delta_df = CSV.read(joinpath(curpath, "above_diagonal_stats_$(epoch)epochs.csv"), DataFrame)
+    cur_delta_df = CSV.read(joinpath(resultspath, "above_diagonal_stats_$(epoch)epochs.csv"), DataFrame)
     cur_delta_df.epoch .= epoch
     cur_delta_df.modification .= modification_string
     append!(overall_delta_stats, cur_delta_df)
 end
 
-modifications_df = filter(x -> 
-    (x.epoch == 30),
-    overall_delta_stats
-)
+modifications_df = filter(x -> (x.epoch == 30), overall_delta_stats)
 modifications_df.perc_above_diagonal = round.(modifications_df.perc_above_diagonal, digits=3)
 
 modifications_df = select(modifications_df, [:modification, :dimension, :perc_above_diagonal])

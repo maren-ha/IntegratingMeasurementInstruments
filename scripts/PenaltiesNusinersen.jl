@@ -57,7 +57,7 @@ data_path = joinpath("../dataset/")
 USE_DUMMY_DATA = true
 
 if USE_DUMMY_DATA
-    mkdir("../results/dummy")
+    !isdir("../results/dummy") && mkdir("../results/dummy")
     # read data
     baseline_df = CSV.File(string(data_path, "dummy_baseline_df.csv")) |> DataFrame
     timedepend_df = CSV.File(string(data_path, "dummy_timedepend_df.csv")) |> DataFrame
@@ -66,9 +66,9 @@ if USE_DUMMY_DATA
     other_vars = ["id", "tvals"]
     baseline_vars = names(baseline_df)
 
-    get_dummy_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; 
+    mixeddata = get_dummy_data_two_tests(timedepend_df, baseline_df, other_vars, baseline_vars; 
         testname1="test1", testname2="test2", remove_lessthan1=true
-    )
+    );
 else
     baseline_df = CSV.File(string(data_path, "baseline_df.csv"), truestrings = ["TRUE", "M"], falsestrings = ["FALSE", "F"], missingstring = ["NA"], decimal=',') |> DataFrame
     timedepend_df = CSV.File(string(data_path, "timedepend_df.csv"), truestrings = ["TRUE"], falsestrings = ["FALSE"], missingstring = ["NA"], decimal=',') |> DataFrame
