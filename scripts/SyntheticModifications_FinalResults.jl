@@ -329,7 +329,7 @@ pathname = joinpath(parentdir, "larger_test_without_subscale")
 resultspath = pathname
 !isdir(resultspath) && mkdir(resultspath)
 # training hyperparams
-epochs = 30
+epochs = USE_DUMMY_DATA ? 5 : 30
 penaltyweight = 5.0f0
 # loss args
 args_joint=LossArgs(
@@ -379,7 +379,7 @@ overall_delta_stats = DataFrame(
 penaltyweight = 5.0f0
 cur_delta_df = nothing
 
-parentdir = USE_DUMMY_DATA ? "../results/dummy/modifications/" : "../results_RR/modifications/"
+parentdir = USE_DUMMY_DATA ? "../results/dummy/modifications/" : "../results/modifications/"
 
 # Numbered modifications 1-6
 for mod_no in [1,2,3,4,6]
