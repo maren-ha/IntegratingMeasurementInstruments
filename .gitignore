@@ -4,4 +4,7 @@ results/penalties/*
 results/penalties_OA/*
 results/dummy/*
 results/zolgensma/*
-dataset/*
+dataset/baseline_df_total.csv
+dataset/baseline_df.csv
+dataset/timedepend_df_total.csv
+dataset/timedepend_df.csv
