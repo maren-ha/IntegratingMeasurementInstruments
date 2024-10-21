@@ -1,6 +1,7 @@
 results/dataset_infos/*
 results/modifications/*
 results/penalties/*
+results/penalties_OA/*
 results/dummy/*
 results/zolgensma/*
 dataset/*
